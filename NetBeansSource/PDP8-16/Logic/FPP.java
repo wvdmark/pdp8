@@ -49,7 +49,7 @@ public class FPP implements Device, Constants {
 017163777,
 017177750,
 017207705,
-013330000, //7776 for Ver 50
+013337776, //Ver 50, 0000 for Ver 0
 013340000,
 013357776,
 013367776,
@@ -289,7 +289,7 @@ public class FPP implements Device, Constants {
                     case FPRST: data.data = getStatus();
                         break;
                     case FPIST: data.skipbus = FPPFlag; if (FPPFlag) {
-                        data.data = getStatus(); clearStatus2(); 
+                        data.data = getStatus(); clearStatus(); 
                         FPPFlag= false; FPPmaint = false; clearIntReq();}
                         break;
                  }
@@ -350,7 +350,7 @@ public class FPP implements Device, Constants {
         }
      }
 
-    private void clearStatus1() {
+    private void clearStatus() {
         trapExit    =false;
         hltExit     =false;
         divZero     =false;
@@ -358,18 +358,6 @@ public class FPP implements Device, Constants {
         expOverflow =false;
         expUnderflow=false;
         FMInstr     =false;
-        lockout     =false;
-    }
-
-    private void clearStatus2() {
-        trapExit    =false;
-        hltExit     =false;
-        divZero     =false;
-        DPOverflow  =false;
-        expOverflow =false;
-        expUnderflow=false;
-        FMInstr     =false;
-        mode        =Mode.FP;
     }
     
     private int getCommand() {
@@ -412,7 +400,7 @@ public class FPP implements Device, Constants {
             APTP = APTP | (aptp&07777);
             a.load(APTP);
             a.setOpadd(a.getFPC());
-            clearStatus1();
+            clearStatus();
             FPPRun = true;
             FPPPaus = false;
             APTDump = true;
@@ -468,7 +456,8 @@ public class FPP implements Device, Constants {
         FPPmpc   = 0;
         FPPBuf   = 0; 
         FPPPnt   = 0;
-        clearStatus2();
+        mode     = Mode.FP;
+        clearStatus();
         clearIntReq();
     }
     
