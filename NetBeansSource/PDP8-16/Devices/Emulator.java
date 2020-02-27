@@ -27,10 +27,23 @@ public abstract class Emulator{
     public abstract void setLoopback(boolean x);
     
     public abstract void Start();
-    public abstract int[] getCodeENTER();
+    public abstract int[] getCodeRETURN();
     public abstract int[] getCodeBS();
     public abstract int[] getCodeDEL();
     public abstract int[] getCodeESC();
+    public abstract int[] getCodeSubtract();
+    public abstract int[] getCodeComma();
+    public abstract int[] getCodeDecimal();
+    public abstract int[] getCodeENTER();
+    public abstract int[] getCodeNP1();
+    public abstract int[] getCodeNP2();
+    public abstract int[] getCodeNP3();
+    public abstract int[] getCodeNP4();
+    public abstract int[] getCodeNP5();
+    public abstract int[] getCodeNP6();
+    public abstract int[] getCodeNP7();
+    public abstract int[] getCodeNP8();
+    public abstract int[] getCodeNP9();
     public abstract int[] getCodeUP();
     public abstract int[] getCodeDOWN();
     public abstract int[] getCodeRIGHT();
@@ -39,12 +52,6 @@ public abstract class Emulator{
     public abstract int[] getCodeF2();
     public abstract int[] getCodeF3();
     public abstract int[] getCodeF4();
-    public abstract int[] getCodeF5();
-    public abstract int[] getCodeF6();
-    public abstract int[] getCodeF7();
-    public abstract int[] getCodeF8();
-    public abstract int[] getCodeF9();
-    public abstract int[] getCodeF10();
     
     public abstract void reset();
     

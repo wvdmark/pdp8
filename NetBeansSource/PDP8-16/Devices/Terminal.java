@@ -24,7 +24,7 @@ import java.awt.image.*;
 
 public class Terminal extends JPanel implements KeyListener, ActionListener, ItemListener, Term {
     static String COPYRIGHT=
-    "PDP8 - VT100 3.0\nCopyright (C) 2004-2014 W. van der Mark\n"+
+    "PDP8 - VT52/VT100 3.0\nCopyright (C) 2004-2020 W. van der Mark\n"+
     "This software is licensed under GNU LGPL.";
     
     private OutputStream out;
@@ -190,6 +190,7 @@ public class Terminal extends JPanel implements KeyListener, ActionListener, Ite
     public void keyPressed(KeyEvent e){
         //System.out.println(e);
         int keycode=e.getKeyCode();
+        int location=e.getKeyLocation();
         int[] code=null;
         switch(keycode){
             case KeyEvent.VK_CONTROL:
@@ -198,9 +199,6 @@ public class Terminal extends JPanel implements KeyListener, ActionListener, Ite
             case KeyEvent.VK_ALT_GRAPH:
             case KeyEvent.VK_CAPS_LOCK:
                 return;
-            case KeyEvent.VK_ENTER:
-                code=emulator.getCodeENTER();
-                break;
             case KeyEvent.VK_BACK_SPACE:
                 code=emulator.getCodeBS();
                 break;
@@ -209,6 +207,48 @@ public class Terminal extends JPanel implements KeyListener, ActionListener, Ite
                 break;
             case KeyEvent.VK_ESCAPE:
                 code=emulator.getCodeESC();
+                break;
+            case KeyEvent.VK_SUBTRACT:
+                code=emulator.getCodeSubtract(); 
+                break;
+            case KeyEvent.VK_ADD:
+                code=emulator.getCodeComma(); //numpad plus used for ,
+                break;
+            case KeyEvent.VK_DECIMAL:
+                code=emulator.getCodeDecimal(); 
+                break;
+            case KeyEvent.VK_ENTER:
+                if (location==KeyEvent.KEY_LOCATION_NUMPAD)
+                code=emulator.getCodeENTER();
+                else
+                code=emulator.getCodeRETURN();
+                break;
+            case KeyEvent.VK_NUMPAD1:
+                code=emulator.getCodeNP1(); 
+                break;
+            case KeyEvent.VK_NUMPAD2:
+                code=emulator.getCodeNP2(); 
+                break;
+            case KeyEvent.VK_NUMPAD3:
+                code=emulator.getCodeNP3(); 
+                break;
+            case KeyEvent.VK_NUMPAD4:
+                code=emulator.getCodeNP4(); 
+                break;
+            case KeyEvent.VK_NUMPAD5:
+                code=emulator.getCodeNP5(); 
+                break;
+            case KeyEvent.VK_NUMPAD6:
+                code=emulator.getCodeNP6(); 
+                break;
+            case KeyEvent.VK_NUMPAD7:
+                code=emulator.getCodeNP7(); 
+                break;
+            case KeyEvent.VK_NUMPAD8:
+                code=emulator.getCodeNP8(); 
+                break;
+            case KeyEvent.VK_NUMPAD9:
+                code=emulator.getCodeNP9(); 
                 break;
             case KeyEvent.VK_UP:
                 code=emulator.getCodeUP();
@@ -233,24 +273,6 @@ public class Terminal extends JPanel implements KeyListener, ActionListener, Ite
                 break;
             case KeyEvent.VK_F4:
                 code=emulator.getCodeF4();
-                break;
-            case KeyEvent.VK_F5:
-                code=emulator.getCodeF5();
-                break;
-            case KeyEvent.VK_F6:
-                code=emulator.getCodeF6();
-                break;
-            case KeyEvent.VK_F7:
-                code=emulator.getCodeF7();
-                break;
-            case KeyEvent.VK_F8:
-                code=emulator.getCodeF8();
-                break;
-            case KeyEvent.VK_F9:
-                code=emulator.getCodeF9();
-                break;
-            case KeyEvent.VK_F10:
-                code=emulator.getCodeF10();
                 break;
         }
         if(code!=null){
@@ -633,7 +655,7 @@ public class Terminal extends JPanel implements KeyListener, ActionListener, Ite
                 filein = new FileInputStream(file);
                 code = new byte[512];
                 while ((codelen= filein.read(code))>0) {
-                    System.out.println(codelen);
+                    //System.out.println(codelen);
                     out.write(code, 0,  codelen);
                 }
                 filein.close();

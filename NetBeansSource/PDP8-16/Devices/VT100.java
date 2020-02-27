@@ -59,13 +59,15 @@ public class VT100 extends Emulator{
     private boolean newline = false;
     private int char_attr = 0;
     private int char_set = 0;
+    private int term_type = 0;
     private boolean g0_graph = false;
     private boolean g1_graph = false;
+    private boolean vt52_graph = false;
     private boolean[] tab ;
     
     
     private char[] vt100_graphics = {
-        0x0040, 0x2666, 0x2592, 0x2409, 0x240c, 0x240d, 0x240a, 0x00b0,
+        0x0020, 0x2666, 0x2592, 0x2409, 0x240c, 0x240d, 0x240a, 0x00b0,
         0x00b1, 0x2424, 0x240b, 0x2518, 0x2510, 0x250c, 0x2514, 0x253c,
         0x2594, 0x2580, 0x2500, 0x2584, 0x2581, 0x251c, 0x2524, 0x2534,
         0x252c, 0x2502, 0x2264, 0x2265, 0x03a0, 0x2260, 0x00a3, 0x00b7
@@ -73,7 +75,7 @@ public class VT100 extends Emulator{
     Octal   Uni     ASCII   Special                 Octal   Uni     ASCII   Special
     Code    Code    graphic graphic                 code    Code    graphic graphic
     ---------------------------------------------------------------------------------------
-    0137    0x0040  _       Blank                   0157    0x2594  o       Horiz Line - scan 1
+    0137    0x0020  _       Blank                   0157    0x2594  o       Horiz Line - scan 1
     0140    0x2666  \       Diamond                 0160    0x2580  p       Horiz Line - scan 3
     0141    0x2592  a       Checkerboard            0161    0x2500  q       Horiz Line - scan 5
     0142    0x2409  b       Digraph: HT             0162    0x2584  r       Horiz Line - scan 7
@@ -89,6 +91,33 @@ public class VT100 extends Emulator{
     0154    0x250c  l       Upper-left corner       0174    0x2260  |       Not equal (=/)
     0155    0x2514  m       Lower-left corner |_    0175    0x00a3  }       UK pound symbol
     0156    0x253c  n       Crossing lines (+)      0176    0x00b7  ~       Centered dot
+     */
+    };
+    private char[] vt52_graphics = {
+        0x0020, 0x0020, 0x2b1b, 0x00b9, 0x00b3, 0x2075, 0x2077, 0x00b0,
+        0x00b1, 0x2192, 0x22ef, 0x002f, 0x2193, 0x2594, 0x2594, 0x2580,
+        0x2580, 0x2580, 0x2584, 0x2584, 0x2581, 0x2080, 0x2081, 0x2082,
+        0x2083, 0x2084, 0x2085, 0x2086, 0x2087, 0x2088, 0x2089, 0x00b6
+    /*
+    Octal   Uni     ASCII   Special                 Octal   Uni     ASCII   Special
+    Code    Code    graphic graphic                 code    Code    graphic graphic
+    ---------------------------------------------------------------------------------------
+    0137    0x0020  _       Blank                   0157    0x2580  o       Bar at scan 3           
+    0140    0x0020  \       Reserved                0160    0x2580  p       Bar at scan 4           
+    0141    0x2b1b  a       Solid rectangle         0161    0x2584  q       Bar at scan 5           
+    0142    0x00b9  b       1/                      0162    0x2584  r       Bar at scan 6           
+    0143    0x00b3  c       3/                      0163    0x2581  s       Bar at scan 7           
+    0144    0x2075  d       5/                      0164    0x2080  t       Subscript 0
+    0145    0x2077  e       7/                      0165    0x2081  u       Subscript 1
+    0146    0x00b0  f       Degree Symbol °         0166    0x2082  v       Subscript 2
+    0147    0x00b1  g       Plus/Minus              0167    0x2083  w       Subscript 3
+    0150    0x2192  h       Right arrow             0170    0x2084  x       Subscript 4
+    0151    0x22ef  i       Ellipsis                0171    0x2085  y       Subscript 5
+    0152    0x002f  j       Divide by /             0172    0x2086  z       Subscript 6
+    0153    0x2193  k       Down arrow              0173    0x2087  {       Subscript 7
+    0154    0x2594  l       Bar at scan 0           0174    0x2088  |       Subscript 8
+    0155    0x2594  m       Bar at scan 1           0175    0x2089  }       Subscript 9
+    0156    0x2580  n       Bar at scan 2           0176    0x00b6  ~       Paragraph §
      */
     };
     
@@ -126,6 +155,8 @@ public class VT100 extends Emulator{
         try{
             while(true){
                 
+                intarg = new int[16];
+                
                 b=getChar();
                 
                 //c = (char) ((b & 0177) + (b<0?128:0));
@@ -156,26 +187,86 @@ public class VT100 extends Emulator{
                 
                 if(b==0x1b){ //ESC
                     b=getChar();
-                    
+                    b = (byte) (b & 0177);
                     if (b==0x5c) { //end special sequence '\'
                         ignore = false;
                         continue;
                     }
                     
-                    if(b=='<'){   // enter ANSII (VT100) mode
-                        ansi = true;
+                    if(b=='F'){   // enter special graphics (VT52) mode
+                        vt52_graph = true;
                         continue;
                     }
-                    if(b=='>'){   // enter keypad numeric mode
+                    if(b=='G'){   // exit special graphics (VT52) mode
+                        vt52_graph = false;
+                        continue;
+                    }
+                    if(b=='<'){   // enter ANSII (VT100) mode
+                        ansi = !ansi;
+                        continue;
+                    }
+                    if(b=='>'){   // exit alternate keypad mode
                         keypad = false;
                         continue;
                     }
-                    if(b=='='){   // enter keypad application mode
+                    if(b=='='){   // enter alternate keypad mode
                         keypad = true;
                         continue;
                     }
+                    if(b=='A'){ //cursor up
+                        cursorUp();
+                        continue;
+                    }
+                    if(b=='B'){ //cursor down
+                        cursorDown();
+                        continue;
+                    }
+                    if(b=='C'){ //Cursor right
+                        cursorRight();
+                        continue;
+                    }
+                    if(b=='D'){  // IND: Index down, like line-feed, scroll text up
+                        if (ansi) {
+                            term.draw_cursor();
+                            term.scroll_window((region_y1)*char_height,(region_y2)*char_height,-char_height, bground, smooth);
+                            term.draw_cursor();
+                        } else cursorLeft();
+                        continue;
+                    }
+                    if(b=='I' | b=='M'){ //Reverse linefeed or Reverse index
+                        term.draw_cursor();
+                        y-=char_height;
+                        if (y<=0) {
+                            y=char_height;
+                        }
+                        term.scroll_window((region_y1-1)*char_height,(region_y2-1)*char_height,char_height, bground, smooth);
+                        term.setCursor(x, y);
+                        term.draw_cursor();
+                        continue;
+                    }
                     if(b=='H'){   // HTS: set horizontal tabs
-                        tab[x/char_width] = true;
+                        if (ansi) tab[x/char_width] = true;
+                        else cursorUpperLeft();
+                        continue;
+                    }
+                    if(b=='Y'){   // Direct cursor address
+                        b=getChar(); 
+                        intarg[0]=(int)b-040;
+                        b=getChar(); 
+                        intarg[1]=(int)b-040;
+                        term.draw_cursor();
+                        y=(intarg[0]+1)*char_height;
+                        x=intarg[1]*char_width;
+                        term.setCursor(x, y);
+                        term.draw_cursor();
+                        continue;
+                    }
+                    if(b=='J'){ //clear to bottom 0; clear top 1; clear all 2
+                        clearScreen();
+                        continue;
+                    }
+                    if(b=='K'){ //erase end of line 0; erase begin 1; erase all line 2
+                        eraseLine();
                         continue;
                     }
                     if(b=='P'){   // DCS: Device control string: ignore until '\'
@@ -215,16 +306,12 @@ public class VT100 extends Emulator{
                         }
                         continue;
                     }
-                    if(b=='M'){   // RI: Reverse index, scroll text down
-                        term.draw_cursor();
-                        term.scroll_window((region_y1-1)*char_height,(region_y2-1)*char_height,char_height, bground, smooth);
-                        term.draw_cursor();
+                    if(b=='c'){   // Power reset, well..., not really
+                        reset();
                         continue;
                     }
-                    if(b=='D'){  // IND: Index down, like line-feed, scroll text up
-                        term.draw_cursor();
-                        term.scroll_window((region_y1)*char_height,(region_y2)*char_height,-char_height, bground, smooth);
-                        term.draw_cursor();
+                    if(b=='Z'){   // IDE: Device identification
+                        term.sendKeySeq(getIDE());
                         continue;
                     }
                     
@@ -238,71 +325,31 @@ public class VT100 extends Emulator{
                     b=getChar();
                     
                     if(b=='A'){ //cursor up
-                        term.draw_cursor();
-                        if(!gotdigits){ intarg[0]=1;}
-                        y-=(intarg[0])*char_height;
-                        if (y<=0) y=char_height;
-                        term.setCursor(x, y);
-                        term.draw_cursor();
+                        cursorUp();
                         continue;
                     }
                     if(b=='B'){ //cursor down
-                        term.draw_cursor();
-                        if(!gotdigits){ intarg[0]=1;}
-                        y+=(intarg[0])*char_height;
-                        if (y>term_height*char_height) y=term_height*char_height;
-                        term.setCursor(x, y);
-                        term.draw_cursor();
+                        cursorDown();
                         continue;
                     }
                     if(b=='C'){ //Cursor right
-                        term.draw_cursor();
-                        if(!gotdigits){ intarg[0]=1;}
-                        x+=(intarg[0])*char_width;
-                        if (x>=term_width*char_width) x = (term_width-1)*char_width;
-                        term.setCursor(x, y);
-                        term.draw_cursor();
+                        cursorRight();
                         continue;
                     }
                     if(b=='D'){ //cursor left
-                        term.draw_cursor();
-                        if(!gotdigits){ intarg[0]=1;}
-                        x-=intarg[0]*char_width;
-                        if(x<0)x=0;
-                        term.setCursor(x, y);
-                        term.draw_cursor();
+                        cursorLeft();
                         continue;
                     }
                     if(b=='H' | b=='f'){ //CUP: cursor position, also HVP:
-                        term.draw_cursor();
-                        if(!gotdigits) intarg[0]=intarg[1]=1;
-                        if (intarg[0]==0) intarg[0]=1;
-                        if (intarg[1]==0) intarg[1]=1;
-                        x=(intarg[1]-1)*char_width;
-                        y=intarg[0]*char_height;
-                        term.setCursor(x, y);
-                        term.draw_cursor();
+                        cursorUpperLeft();
                         continue;
                     }
                     if(b=='J'){ //clear to bottom 0; clear top 1; clear all 2
-                        int ystart = 0; int yend = term_height*char_height;
-                        if (intarg[0]==0) ystart = y-char_height;
-                        if (intarg[0]==1) yend = y;
-                        term.draw_cursor();
-                        term.clear_area(0, ystart, term_width*char_width, yend);
-                        term.redraw(0, ystart-char_height, term_width*char_width,
-                        yend-ystart+char_height);
-                        term.draw_cursor();
+                        clearScreen();
                         continue;
                     }
                     if(b=='K'){ //erase end of line 0; erase begin 1; erase all line 2
-                        int xstart = 0; int xend = term_width*char_width;
-                        if (intarg[0]==0) xstart = x;
-                        if (intarg[0]==1) xend = x+char_width;
-                        term.draw_cursor();
-                        term.clear_area(xstart, y-char_height, xend, y);
-                        term.redraw(xstart, y-char_height, xend-xstart, char_height);
-                        term.draw_cursor();
+                        eraseLine();
                         continue;
                     }
                     
@@ -311,8 +358,13 @@ public class VT100 extends Emulator{
                         continue;
                     }
                     
-                    if(b=='c'){   // Power reset, well..., not really
-                        reset();
+                    if(b=='c'){   // Identify terminal type
+                        if (intarg[0]==0) System.out.println("VT100-Ready-Wrong direction");
+                        if (intarg[0]==1) {
+                            String seq = (char)(0x1b) + "[?1";
+                            seq = seq + String.valueOf(term_type) + ";" + "0c";
+                            //term.sendKeySeq(seq.getBytes());
+                        }
                         continue;
                     }
                     
@@ -515,7 +567,9 @@ public class VT100 extends Emulator{
                         char[] b2=new char[1];
                         //b = getChar();
                         //if (graphics && 0x5f <= b && b <= 0x7e) {
-                        if ((0x5f <= b && b <= 0x7e) & (char_set==0 & g0_graph | char_set==1 & g1_graph)) {
+                        if ((0x5f <= b && b <= 0x7e) & (vt52_graph)) {
+                            b2[0] = vt52_graphics[b-0x5f];
+                        } else if ((0x5f <= b && b <= 0x7e) & ((char_set==0 & g0_graph) | (char_set==1 & g1_graph))) {
                             b2[0] = vt100_graphics[b-0x5f];
                         } else b2[0]= c;
                         term.drawChars(b2, 0, 1, x, y);
@@ -599,31 +653,121 @@ public class VT100 extends Emulator{
         term.draw_cursor();
     }
     
-    private static int[] ENTER={(int)0x0d};
-    private static int[] BS={(int)0x7f};
+    private void cursorUpperLeft() {
+        term.draw_cursor();
+        if(!gotdigits) intarg[0]=intarg[1]=1;
+        if (intarg[0]==0) intarg[0]=1;
+        if (intarg[1]==0) intarg[1]=1;
+        x=(intarg[1]-1)*char_width;
+        y=intarg[0]*char_height;
+        term.setCursor(x, y);
+        term.draw_cursor();
+   }
+    
+    private void cursorUp() {
+        term.draw_cursor();
+        if(!gotdigits){ intarg[0]=1;}
+        y-=(intarg[0])*char_height;
+        if (y<=0) y=char_height;
+        term.setCursor(x, y);
+        term.draw_cursor();
+   }
+    
+    private void cursorDown() {
+        term.draw_cursor();
+        if(!gotdigits){ intarg[0]=1;}
+        y+=(intarg[0])*char_height;
+        if (y>term_height*char_height) y=term_height*char_height;
+        term.setCursor(x, y);
+        term.draw_cursor();
+   }
+    
+    private void cursorRight() {
+        term.draw_cursor();
+        if(!gotdigits){ intarg[0]=1;}
+        x+=(intarg[0])*char_width;
+        if (x>=term_width*char_width) x = (term_width-1)*char_width;
+        term.setCursor(x, y);
+        term.draw_cursor();
+   }
+    
+    private void cursorLeft() {
+        term.draw_cursor();
+        if(!gotdigits){ intarg[0]=1;}
+        x-=intarg[0]*char_width;
+        if(x<0)x=0;
+        term.setCursor(x, y);
+        term.draw_cursor();
+   }
+    
+    private void clearScreen() {
+        int ystart = 0; int yend = term_height*char_height;
+        if (intarg[0]==0) ystart = y-char_height;
+        if (intarg[0]==1) yend = y;
+        term.draw_cursor();
+        term.clear_area(0, ystart, term_width*char_width, yend);
+        term.redraw(0, ystart, term_width*char_width,
+            yend-ystart);
+        term.draw_cursor(); 
+   }
+    
+    private void eraseLine() {
+        int xstart = 0; int xend = term_width*char_width;
+        if (intarg[0]==0) xstart = x;
+        if (intarg[0]==1) xend = x+char_width;
+        term.draw_cursor();
+        term.clear_area(xstart, y-char_height, xend, y);
+        term.redraw(xstart, y-char_height, xend-xstart, char_height);
+        term.draw_cursor();
+   }
+    
+    private static int[] RETURN={(int)0x0d};
+    private static int[] BS={(int)0x08};
     private static int[] DEL={(int)0x7f};
     private static int[] ESC={(int)0x1b};
-    private static int[] UP={(int)0x1b, (int)'[', (int)'A'};
-    private static int[] DOWN={(int)0x1b, (int)'[', (int)'B'};
-    private static int[] RIGHT={(int)0x1b, (int)'[', (int)'C'};
-    private static int[] LEFT={(int)0x1b, (int)'[', (int)'D'};
-    private static int[] F1={(int)0x1b, (int)'[', (int)'P'};
-    private static int[] F2={(int)0x1b, (int)'[', (int)'Q'};
-    private static int[] F3={(int)0x1b, (int)'[', (int)'R'};
-    private static int[] F4={(int)0x1b, (int)'[', (int)'S'};
-    private static int[] F5={(int)0x1b, (int)'[', (int)'t'};
-    private static int[] F6={(int)0x1b, (int)'[', (int)'u'};
-    private static int[] F7={(int)0x1b, (int)'[', (int)'v'};
-    private static int[] F8={(int)0x1b, (int)'[', (int)'I'};
-    private static int[] F9={(int)0x1b, (int)'[', (int)'w'};
-    private static int[] F10={(int)0x1b, (int)'[', (int)'x'};
+    private static int[] SUBTRACT={(int)0x1b, (int)'?', (int)'m'}; 
+    private static int[] COMMA={(int)0x1b, (int)'?', (int)'l'}; //lower case L
+    private static int[] DECIMAL={(int)0x1b, (int)'?', (int)'n'}; 
+    private static int[] ENTER={(int)0x1b, (int)'?', (int)'M'}; 
+    private static int[] NUMPAD0={(int)0x1b, (int)'?', (int)'p'}; 
+    private static int[] NUMPAD1={(int)0x1b, (int)'?', (int)'q'}; 
+    private static int[] NUMPAD2={(int)0x1b, (int)'?', (int)'r'};
+    private static int[] NUMPAD3={(int)0x1b, (int)'?', (int)'s'}; 
+    private static int[] NUMPAD4={(int)0x1b, (int)'?', (int)'t'};
+    private static int[] NUMPAD5={(int)0x1b, (int)'?', (int)'u'}; 
+    private static int[] NUMPAD6={(int)0x1b, (int)'?', (int)'v'};
+    private static int[] NUMPAD7={(int)0x1b, (int)'?', (int)'w'}; 
+    private static int[] NUMPAD8={(int)0x1b, (int)'?', (int)'x'};
+    private static int[] NUMPAD9={(int)0x1b, (int)'?', (int)'y'}; 
+    private static int[] UP={(int)0x1b, (int)'A'}; 
+    private static int[] DOWN={(int)0x1b, (int)'B'}; 
+    private static int[] RIGHT={(int)0x1b, (int)'C'}; 
+    private static int[] LEFT={(int)0x1b, (int)'D'}; 
+    private static int[] F1={(int)0x1b, (int)'P'};
+    private static int[] F2={(int)0x1b, (int)'Q'};
+    private static int[] F3={(int)0x1b, (int)'R'};
+    private static int[] F4={(int)0x1b, (int)'S'};
     private static int[] DSR={(int)0x1b, (int)'[', (int)'0', (int)'n'};
-    private static int[] CPR={(int)0x1b, (int)'['}; //, (int)'0', (int)'0', (int)';', (int)'0', (int)'0', (int)'R'};
+    private static int[] IDE={(int)0x1b, (int)'/', (int)'Z'}; //VT100
+    private static int[] CPR={(int)0x1b, (int)'['}; 
     
-    public int[] getCodeENTER(){ return ENTER; }
-    public int[] getCodeBS(){ return BS; }
+    public int[] getCodeRETURN(){ return RETURN; }
+    public int[] getCodeBS(){  if (keypad) return BS; else return DEL; }
     public int[] getCodeDEL(){ return DEL; }
     public int[] getCodeESC(){ return ESC; }
+    public int[] getCodeSubtract(){ if (keypad) return SUBTRACT; else return null;}
+    public int[] getCodeComma(){ if (keypad) return COMMA; else return null;}
+    public int[] getCodeDecimal(){ if (keypad) return DECIMAL; else return null;}
+    public int[] getCodeENTER(){ if (keypad) return ENTER; else return RETURN; }
+    public int[] getCodeNP1(){ if (keypad) return NUMPAD1; else return null;}
+    public int[] getCodeNP2(){ if (keypad) return NUMPAD2; else return null;}
+    public int[] getCodeNP3(){ if (keypad) return NUMPAD3; else return null;}
+    public int[] getCodeNP4(){ if (keypad) return NUMPAD4; else return null;}
+    public int[] getCodeNP5(){ if (keypad) return NUMPAD5; else return null;}
+    public int[] getCodeNP6(){ if (keypad) return NUMPAD6; else return null;}
+    public int[] getCodeNP7(){ if (keypad) return NUMPAD7; else return null;}
+    public int[] getCodeNP8(){ if (keypad) return NUMPAD8; else return null;}
+    public int[] getCodeNP9(){ if (keypad) return NUMPAD9; else return null;}
     public int[] getCodeUP(){ return UP; }
     public int[] getCodeDOWN(){ return DOWN; }
     public int[] getCodeRIGHT(){ return RIGHT; }
@@ -632,14 +776,10 @@ public class VT100 extends Emulator{
     public int[] getCodeF2(){ return F2; }
     public int[] getCodeF3(){ return F3; }
     public int[] getCodeF4(){ return F4; }
-    public int[] getCodeF5(){ return F5; }
-    public int[] getCodeF6(){ return F6; }
-    public int[] getCodeF7(){ return F7; }
-    public int[] getCodeF8(){ return F8; }
-    public int[] getCodeF9(){ return F9; }
-    public int[] getCodeF10(){ return F10; }
     public int[] getDSR(){ return DSR; }
+    public int[] getIDE(){ return IDE; }
     public int[] getCPR(){ return CPR; }
+    public int[] getCode(){ return CPR; }
     
     public void reset(){
         arch = System.getProperty("os.name");
@@ -654,6 +794,8 @@ public class VT100 extends Emulator{
         term.setBGround(bground);
         
         cursor_appl = false;
+        term_type = 0;
+        keypad = false;
         ansi = false;
         col132 = false;
         smooth = false;
@@ -663,6 +805,9 @@ public class VT100 extends Emulator{
         repeat = false;
         interlace = false;
         newline = false;
+        vt52_graph = false;
+        g0_graph = false;
+        g1_graph = false;
         
         tab = new boolean[term_width];
         for (x=0;x<term_width;x++) {
