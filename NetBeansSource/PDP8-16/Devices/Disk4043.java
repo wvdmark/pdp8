@@ -206,10 +206,13 @@ public class Disk4043 extends JFrame implements Logic.Constants, MouseListener, 
 
     private void openDisk(int unit, int removable) {
         java.io.File file = null;
+        java.io.File lfile = null;
         java.io.File rkfile = null;
         boolean convert = false;
         String dfile = si3040.data.getProp("Disk4043-" + unit + "-" + removable);
+        lfile = new java.io.File(si3040.data.getProp("Prev4043-" + unit + "-" + removable));
         if (dfile==null) {
+            chooser.setSelectedFile(lfile);
             int option = chooser.showOpenDialog(this);
             if (option == javax.swing.JFileChooser.APPROVE_OPTION) {
                 file = chooser.getSelectedFile();
@@ -252,6 +255,7 @@ public class Disk4043 extends JFrame implements Logic.Constants, MouseListener, 
                 String rtex = " fixed: "; if (removable>0) rtex = " rem: ";
                 junit[unit][removable].setText("Unit " + unit + rtex + file.getName());
                 si3040.data.setProp("Disk4043-" + unit + "-" + removable, file.getCanonicalPath());
+                si3040.data.setProp("Prev4043-" + unit + "-" + removable, file.getCanonicalPath());
             }
             catch(java.io.IOException e){ System.out.println(e);
             }
@@ -322,6 +326,12 @@ public class Disk4043 extends JFrame implements Logic.Constants, MouseListener, 
 
     }
 
+    /**
+     *
+     * @param unit
+     * @param removable
+     * @param keepname
+     */
     public void closeDisk(int unit, int removable, boolean keepname) {
         if (si3040.sel[unit][removable]) {
             try {
