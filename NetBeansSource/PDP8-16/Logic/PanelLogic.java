@@ -9,9 +9,13 @@
  */
 package Logic;
 
+import java.awt.Color;
+
 public class PanelLogic extends Thread implements Constants {
 
-    /** Creates a new instance of PanelLogic */
+    /** Creates a new instance of PanelLogic
+     * @param data
+     * @param name */
     public PanelLogic(BusRegMem data, String name) {
         super(name);
         this.data = data;
@@ -49,6 +53,7 @@ public class PanelLogic extends Thread implements Constants {
             case 10: setStyle(true); break;
             case 11: setStyle(false); break;
             case 12: setTimSha(sel); break;
+            case 13: setFPPena(sel); break;
             }
     }
 
@@ -62,6 +67,10 @@ public class PanelLogic extends Thread implements Constants {
 
     public void setTimSha(boolean timsha) {
         data.timsha = timsha;
+    }
+
+    public void setFPPena(boolean fppena) {
+        data.FPPenable = fppena;
     }
 
     public void setPanel(Panel.Panel8 panel) {
@@ -266,6 +275,11 @@ public class PanelLogic extends Thread implements Constants {
     @Override
     public void run() {
         while (true) {
+            if (data.FPPRunning==true) {
+                panel.runLamp.setColor(Color.RED);
+            } else {
+                panel.runLamp.setColor(Color.YELLOW);
+            }
             panel.runLamp.setState(data.run);
             //if (data.run & power==0) panel.knobPower.setValue((float) 0.5);
             if (power < 2) {

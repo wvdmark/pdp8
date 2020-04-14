@@ -216,6 +216,10 @@ public class BusRegMem implements Constants{
     public int sc;
     public int gtf;
     
+    //FPP
+    public boolean FPPenable = true;
+    public boolean FPPRunning;
+
     //KM8-E --- KT8A
     public int ifr = 0; //Instruction field register
     public int ibr = 0; //Instruction bank register

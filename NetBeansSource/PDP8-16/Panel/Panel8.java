@@ -171,6 +171,10 @@ public class Panel8 extends javax.swing.JPanel implements MouseListener, ActionL
         timshadis.addActionListener(this);
         timshadis.setName("12");
         jPopupMenu1.add(timshadis);
+        JCheckBoxMenuItem fppena = new JCheckBoxMenuItem("FPP",true);
+        fppena.addActionListener(this);
+        fppena.setName("13");
+        jPopupMenu1.add(fppena);
     }
 
     /** This method is called from within the constructor to

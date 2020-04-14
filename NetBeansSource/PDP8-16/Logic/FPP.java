@@ -396,12 +396,13 @@ public class FPP implements Device, Constants {
             FPPPaus = false;
             return true;
         }
-        else if(!FPPRun & !FPPFlag) {
+        else if(!FPPRun & !FPPFlag & data.FPPenable) {
             APTP = APTP | (aptp&07777);
             a.load(APTP);
             a.setOpadd(a.getFPC());
             clearStatus();
             FPPRun = true;
+            data.FPPRunning = true;
             FPPPaus = false;
             APTDump = true;
             return true;
@@ -441,6 +442,7 @@ public class FPP implements Device, Constants {
         if (APTDump) a.store(APTP);
         setStatus(x);
         FPPRun = false;
+        //data.FPPRunning = false;
         FPPFlag = true;
         APTDump = false;
         setIntReq();
@@ -449,6 +451,7 @@ public class FPP implements Device, Constants {
    public void ClearFlags(int devcode) {
         FPPFlag  = false;
         FPPRun   = false;
+        data.FPPRunning = false;
         FPPPaus  = false;
         FPPintena= false;
         FPPmaint = false;
@@ -478,7 +481,7 @@ public class FPP implements Device, Constants {
         Integer addr;
         public void run() {
             while (true) {
-                if (!data.run) FPPRun = false;
+                if (!data.run) FPPRun = false; 
                 while (data.run & FPPRun & !FPPPaus) {
                     FMInstr = false;
                     int ins = a.getInstr(); 
@@ -556,6 +559,7 @@ public class FPP implements Device, Constants {
                     }
                     if (FPPStep || FPPmaint) {
                         FPPRun  = false;
+                        data.FPPRunning = false;
                         FPPStep = false;
                     }
                 }
@@ -1113,7 +1117,7 @@ class FAC {
     public void mshift(int diff) {
         int shift;
         shift = Math.min(63, Math.abs(diff));
-        if (diff>0)m = m>>shift;
+        if (diff>0) m = m>>shift;
         else m = m<<shift;
         m = m&mode.mask;
         if (m==0) e = 0;

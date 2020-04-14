@@ -20,6 +20,7 @@ public class Lamp extends javax.swing.JComponent {
 
     private boolean state;
     private Color lampColor;
+    private Color newColor;
     private int width;
     private int height;
     private int size;
@@ -31,6 +32,7 @@ public class Lamp extends javax.swing.JComponent {
 
     public Lamp(){
         setState(true);
+        setColor(Color.YELLOW);
         // Handle focus so that the knob gets the correct focus highlighting.
         addFocusListener(new FocusListener() {
             public void focusGained(FocusEvent e) {
@@ -50,6 +52,7 @@ public class Lamp extends javax.swing.JComponent {
             setState(false);
         }
     }
+    
     public void setState(boolean state) {
         if (this.state == state) {
             return;
@@ -57,7 +60,7 @@ public class Lamp extends javax.swing.JComponent {
 
         this.state = state;
         if (state == true) {
-            this.lampColor = Color.YELLOW;
+            this.lampColor = this.newColor;
         } else {
             this.lampColor = Color.BLACK;
         }
@@ -68,6 +71,9 @@ public class Lamp extends javax.swing.JComponent {
         return state;
     }
 
+    public void setColor(Color newcolor) {
+        this.newColor = newcolor;
+    }
 
     @Override
     public void paint(Graphics g) {
