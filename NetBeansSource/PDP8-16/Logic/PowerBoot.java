@@ -512,9 +512,9 @@ public class PowerBoot implements Device, Constants {
     }
 
     private void Bootit (int device) {
-        if ((device<<16)>2) {
+        if ((device>>16)>2) {
             Calendar today = Calendar.getInstance();
-            int year = today.get(Calendar.YEAR)-28-1970; //-Epoch for same weekdays
+            int year = today.get(Calendar.YEAR)-1970; 
             data.mem.set(010000, 07666,  ((today.get(Calendar.MONTH)+1)<<8) +
                                     (today.get(Calendar.DAY_OF_MONTH)<<3) +
                                     (year % 8));  //set OS/8 Date

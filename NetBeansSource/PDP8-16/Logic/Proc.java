@@ -42,7 +42,7 @@ public class Proc extends Thread implements Constants {
                 if (data.msirdis) {
                     Break();
                 } else {
-                    if (data.fset==FETCH & data.cpma==0412) {
+                    if (data.fset==FETCH & data.cpma==05203) {
                        data.run = true;
                     }
                     if (data.intinprog) data.setInterruptOff();

@@ -152,7 +152,7 @@ public class BusRegMem implements Constants{
 
         mem.copy_to( inimem, 0, 0, 01045);
         Calendar today = Calendar.getInstance();
-        int year = today.get(Calendar.YEAR)-28-1970; //-Epoch for same weekdays
+        int year = today.get(Calendar.YEAR)-1970;
         mem.set(010000, 07666,  ((today.get(Calendar.MONTH)+1)<<8) +
                                 (today.get(Calendar.DAY_OF_MONTH)<<3) +
                                 (year % 8));  //set OS/8 Date
