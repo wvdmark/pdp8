@@ -210,7 +210,9 @@ public class Disk4043 extends JFrame implements Logic.Constants, MouseListener, 
         java.io.File rkfile = null;
         boolean convert = false;
         String dfile = si3040.data.getProp("Disk4043-" + unit + "-" + removable);
-        lfile = new java.io.File(si3040.data.getProp("Prev4043-" + unit + "-" + removable));
+        String pfile = si3040.data.getProp("Prev4043-" + unit + "-" + removable);
+        if (pfile==null) pfile = System.getProperty("user.dir");        
+        lfile = new java.io.File(pfile);
         if (dfile==null) {
             chooser.setSelectedFile(lfile);
             int option = chooser.showOpenDialog(this);

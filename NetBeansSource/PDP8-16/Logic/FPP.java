@@ -451,6 +451,7 @@ public class FPP implements Device, Constants {
    public void ClearFlags(int devcode) {
         FPPFlag  = false;
         FPPRun   = false;
+        FPPStep  = false;
         data.FPPRunning = false;
         FPPPaus  = false;
         FPPintena= false;
